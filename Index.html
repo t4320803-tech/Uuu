@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>سامانه مسابقات حذفی</title>
+<style>
+:root{
+  --paper:#F1F2F0; --card:#FFFFFF; --ink:#18212B; --muted:#5E6A75;
+  --brand:#0E4F5C; --on-brand:#FFFFFF; --accent:#9A6F1E;
+  --edge:#D2D6D9; --soft:#E7EAEC; --line:#8A97A3;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#10171D; --card:#18222B; --ink:#E6EBEF; --muted:#9AA7B2;
+    --brand:#4DA3B5; --on-brand:#08161A; --accent:#D9A94A;
+    --edge:#2B3A46; --soft:#1F2C36; --line:#566876;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Vazirmatn","Vazir","IRANSans",Tahoma,"Segoe UI",system-ui,sans-serif;
+  font-size:16px; line-height:1.7;
+}
+body.noscroll{overflow:hidden}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.masthead{background:var(--card);border-bottom:1px solid var(--edge)}
+.masthead .in{max-width:1200px;margin:0 auto;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:4px solid var(--brand)}
+.masthead strong{font-size:1.05rem}
+.masthead span{color:var(--muted);font-size:.9rem}
+main{max-width:1200px;margin:0 auto;padding:22px 20px 56px}
+
+.btn{border:1px solid var(--edge);background:var(--card);border-radius:6px;padding:8px 14px;cursor:pointer}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--on-brand);font-weight:700}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.tiny{padding:2px 9px;font-size:.82rem}
+.btn.big{width:100%;padding:13px;font-size:1.05rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ---------- setup ---------- */
+.setup{display:grid;gap:18px;max-width:900px;margin:0 auto}
+.setup .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:760px){.setup .cols{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--edge);border-radius:8px;padding:20px}
+.panel h2{margin:0 0 14px;font-size:1.1rem}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field span,.seg legend{font-size:.9rem;color:var(--muted)}
+.field input,.addrow input{padding:10px 12px;border:1px solid var(--edge);border-radius:6px;background:var(--paper);min-width:0}
+.seg{border:0;margin:0 0 6px;padding:0}
+.seg legend{padding:0;margin-bottom:6px}
+.seg .opts{display:flex;border:1px solid var(--edge);border-radius:6px;overflow:hidden}
+.seg label{flex:1;position:relative}
+.seg input{position:absolute;opacity:0;inset:0;cursor:pointer}
+.seg span{display:block;text-align:center;padding:9px 6px;background:var(--paper);font-size:.95rem;color:var(--ink)}
+.seg label + label span{border-inline-start:1px solid var(--edge)}
+.seg input:checked + span{background:var(--brand);color:var(--on-brand);font-weight:700}
+.seg input:focus-visible + span{outline:3px solid var(--accent);outline-offset:-3px}
+.seg p{margin:6px 0 0;font-size:.85rem;color:var(--muted)}
+.addrow{display:flex;gap:8px}
+.addrow input{flex:1}
+.plist{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px 14px}
+.plist li{display:flex;align-items:center;gap:8px;padding:5px 8px;border-bottom:1px solid var(--edge)}
+.plist .n{color:var(--muted);min-width:24px;font-size:.88rem}
+.plist .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plist button{border:0;background:none;color:var(--muted);cursor:pointer;width:26px;height:26px;border-radius:4px;font-size:1.1rem}
+.plist button:hover{background:var(--soft)}
+.hint{color:var(--muted);font-size:.9rem;margin:12px 0 0}
+
+/* ---------- play page ---------- */
+.pagehead{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-start}
+.pagehead h1{margin:0;font-size:1.6rem;line-height:1.4}
+.pagehead .sub{margin:2px 0 0;color:var(--muted);font-size:.92rem;display:flex;flex-wrap:wrap;gap:4px 18px}
+.pagehead .btns{display:flex;flex-wrap:wrap;gap:8px}
+.progress{margin-top:16px}
+.bar{height:8px;background:var(--soft);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--brand);transition:width .3s}
+.progress p{margin:6px 0 0;font-size:.92rem;color:var(--muted)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--edge);margin:18px 0 16px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:10px 18px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs button[aria-selected="true"]{border-bottom-color:var(--brand);font-weight:700}
+
+.champ{text-align:center;padding:24px 16px;margin-bottom:16px;background:var(--card);border:1px solid var(--edge);outline:1px solid var(--accent);outline-offset:-8px}
+.champ p{margin:0;color:var(--muted)}
+.champ h2{margin:2px 0 6px;font-size:2rem;color:var(--accent)}
+
+/* ---------- bracket viewer ---------- */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:8px}
+.toolbar .zoomlbl{min-width:48px;text-align:center;font-variant-numeric:tabular-nums;font-size:.9rem}
+.toolbar .hint{margin:0 auto 0 0;font-size:.82rem}
+.bwrap.full{position:fixed;inset:0;z-index:40;background:var(--paper);padding:10px;display:flex;flex-direction:column}
+.viewport{
+  position:relative;overflow:hidden;height:min(74vh,820px);min-height:380px;
+  border:1px solid var(--edge);border-radius:8px;background:var(--soft);
+  touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;
+}
+.bwrap.full .viewport{flex:1;height:auto}
+.viewport.grabbing{cursor:grabbing}
+.stage{
+  position:absolute;top:0;left:0;transform-origin:0 0;direction:rtl;
+  display:flex;align-items:stretch;gap:76px;padding:28px;width:max-content;
+}
+.stage:not(.ready){visibility:hidden}
+.stage.anim{transition:transform .35s ease}
+@media (prefers-reduced-motion: reduce){.stage.anim{transition:none}}
+.stage svg.lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.stage svg.lines path{fill:none;stroke:var(--line);stroke-width:2}
+.col{width:220px;flex:none;display:flex;flex-direction:column}
+.col-head{border-bottom:2px solid var(--brand);padding-bottom:6px;margin-bottom:16px}
+.col-head h3{margin:0;font-size:1.05rem}
+.col-head small{color:var(--muted);font-size:.82rem}
+.col.future .col-head{border-bottom-color:var(--edge)}
+.col-body{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:20px}
+
+.match,.bye,.ghost{background:var(--card);border:1px solid var(--edge);border-radius:6px;overflow:hidden;position:relative;z-index:1;user-select:text;-webkit-user-select:text}
+.match.next{outline:2px solid var(--accent);outline-offset:2px}
+.mhead{display:flex;justify-content:space-between;align-items:center;padding:3px 10px;background:var(--soft);font-size:.78rem;color:var(--muted)}
+.prow{display:flex;align-items:center;gap:8px;padding:7px 10px;border-inline-start:4px solid transparent}
+.prow + .prow{border-top:1px solid var(--edge)}
+.seed{flex:none;min-width:20px;font-size:.78rem;color:var(--muted)}
+.name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow.win{border-inline-start-color:var(--accent);font-weight:700;background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.prow.lose{color:var(--muted)}
+.pts{min-width:26px;text-align:center;font-variant-numeric:tabular-nums}
+.tick{color:var(--accent)}
+.score{width:48px;padding:4px;text-align:center;border:1px solid var(--edge);border-radius:5px;background:var(--paper)}
+.actions{padding:6px 10px;border-top:1px solid var(--edge);display:flex;justify-content:flex-end;gap:6px;background:var(--soft)}
+.bye{border-inline-start:4px solid var(--brand)}
+.bye .prow{border-inline-start:0}
+.bye .note{margin:0;padding:0 10px 8px;font-size:.8rem;color:var(--muted)}
+.ghost{border-style:dashed;background:transparent}
+.ghost p{margin:0;padding:12px 10px;font-size:.85rem;color:var(--muted);text-align:center}
+
+/* ---------- tables ---------- */
+.tblwrap{overflow-x:auto;background:var(--card);border:1px solid var(--edge);border-radius:8px}
+table.tbl{width:100%;border-collapse:collapse;font-size:.95rem}
+.tbl th,.tbl td{padding:9px 12px;text-align:start;border-bottom:1px solid var(--edge);white-space:nowrap}
+.tbl th{background:var(--soft);font-weight:700;font-size:.85rem;color:var(--muted)}
+.tbl tr:last-child td{border-bottom:0}
+.tbl .num{font-variant-numeric:tabular-nums}
+.tbl tr.top td{font-weight:700}
+.tbl .win{font-weight:700;color:var(--accent)}
+.tbl .muted{color:var(--muted)}
+.section{margin-bottom:22px}
+.section h3{margin:0 0 8px;font-size:1.05rem}
+.section h3 small{color:var(--muted);font-weight:400;margin-inline-start:8px}
+.tools{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+
+#toast{position:fixed;inset-inline:16px;bottom:20px;margin:0 auto;max-width:440px;background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:8px;text-align:center;opacity:0;pointer-events:none;transition:opacity .2s;z-index:80}
+#toast.show{opacity:1}
+dialog{border:1px solid var(--edge);border-radius:10px;background:var(--card);color:var(--ink);padding:20px;max-width:380px}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.dlg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+#drawOv{position:fixed;inset:0;z-index:90;background:color-mix(in srgb,var(--paper) 94%,transparent);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+#drawOv p{margin:0;color:var(--muted)}
+#drawName{font-size:2.2rem;font-weight:800;color:var(--brand);min-height:3.2rem;text-align:center;padding:0 16px}
+
+@media print{
+  @page{size:landscape;margin:12mm}
+  .masthead,.tabs,.toolbar,.pagehead .btns,.tools,.actions,.btn{display:none !important}
+  body{background:#fff;color:#000}
+  .viewport{height:auto !important;overflow:visible;border:0;background:#fff}
+  .stage{position:relative !important;transform:none !important;visibility:visible !important}
+  .bwrap.full{position:static}
+}
+</style>
+</head>
+<body>
+<header class="masthead"><div class="in"><strong>سامانه مسابقات حذفی</strong><span id="today"></span></div></header>
+<main id="app"></main>
+<div id="toast" role="status" aria-live="polite"></div>
+<dialog id="dlg">
+  <p id="dlgMsg" style="margin:0"></p>
+  <div class="dlg-actions">
+    <button class="btn" id="dlgNo">انصراف</button>
+    <button class="btn primary" id="dlgYes">ادامه</button>
+  </div>
+</dialog>
+<div id="drawOv" hidden aria-live="polite"><p>قرعه‌کشی در حال انجام است</p><div id="drawName"></div></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const fa = n => Number(n).toLocaleString('fa-IR');
+const toEn = s => String(s)
+  .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+  .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const newId = () => 'i' + Math.random().toString(36).slice(2, 9);
+const dateStr = iso => new Date(iso).toLocaleDateString('fa-IR', { year:'numeric', month:'long', day:'numeric' });
+const MAX_PLAYERS = 64;
+
+/* ---------- state ---------- */
+const KEY = 'tournament-v2';
+const defaults = () => ({ phase:'setup', title:'', mode:'score', drawMode:'random',
+  players:[], seeds:{}, rounds:[], createdAt:null });
+function load(){ try { return JSON.parse(localStorage.getItem(KEY)); } catch(e){ return null; } }
+function persist(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+let state = Object.assign(defaults(), load() || {});
+let tab = 'bracket';
+let full = false;
+let viewReady = false;
+let starting = false;
+const view = { x:0, y:0, s:1 };
+
+$('#today').textContent = dateStr(new Date().toISOString());
+
+/* ---------- helpers ---------- */
+function shuffle(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+let toastTimer;
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+function ask(msg){
+  return new Promise(res => {
+    const d = $('#dlg');
+    $('#dlgMsg').textContent = msg;
+    const done = v => { d.close(); res(v); };
+    $('#dlgYes').onclick = () => done(true);
+    $('#dlgNo').onclick = () => done(false);
+    d.oncancel = () => res(false);
+    d.showModal();
+  });
+}
+function roundTitle(count, idx){
+  if (count === 2) return 'فینال';
+  if (count <= 4) return 'نیمه‌نهایی';
+  if (count <= 8) return 'یک‌چهارم نهایی';
+  if (count <= 16) return 'یک‌هشتم نهایی';
+  return 'مرحله ' + fa(idx + 1);
+}
+const titleOf = () => state.title.trim() || 'مسابقات حذفی';
+const modeLabel = () => state.mode === 'score' ? 'ثبت نتیجه با امتیاز' : 'ثبت نتیجه فقط با برنده';
+
+/* ---------- tournament logic ---------- */
+function buildRound(entries){
+  let list = entries.slice();
+  let bye = null;
+  if (list.length % 2 === 1) {
+    // odd count: one participant is picked at random and goes straight through
+    const had = new Set(state.rounds.flatMap(r => r.items.filter(i => i.type === 'bye').map(i => i.p)));
+    let pool = list.filter(e => !had.has(e.name));
+    if (!pool.length) pool = list;
+    bye = pool[Math.floor(Math.random() * pool.length)];
+    list = list.filter(e => e !== bye);
+  }
+  const items = [];
+  for (let i = 0; i < list.length; i += 2) {
+    items.push({ type:'match', id:newId(), a:list[i].name, b:list[i+1].name,
+      srcA:list[i].src, srcB:list[i+1].src, sa:'', sb:'', winner:null });
+  }
+  if (bye) items.push({ type:'bye', id:newId(), p:bye.name, src:bye.src });
+  return { count: entries.length, items };
+}
+function drawAnimation(names){
+  return new Promise(res => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return res();
+    const ov = $('#drawOv'), t = $('#drawName');
+    ov.hidden = false;
+    const t0 = Date.now();
+    const tick = setInterval(() => {
+      t.textContent = names[Math.floor(Math.random() * names.length)];
+      if (Date.now() - t0 > 1400) { clearInterval(tick); ov.hidden = true; res(); }
+    }, 70);
+  });
+}
+async function startTournament(){
+  if (starting) return;
+  starting = true;
+  const names = state.drawMode === 'random' ? shuffle(state.players) : state.players.slice();
+  await drawAnimation(state.players);
+  state.seeds = {};
+  names.forEach((n, i) => state.seeds[n] = i + 1);
+  state.rounds = [];
+  state.rounds = [buildRound(names.map(name => ({ name, src:null })))];
+  state.phase = 'play';
+  state.createdAt = new Date().toISOString();
+  tab = 'bracket'; viewReady = false; full = false;
+  document.body.classList.remove('noscroll');
+  persist(); render();
+  starting = false;
+  toast('قرعه‌کشی انجام شد');
+}
+function advanceIfDone(){
+  const last = state.rounds[state.rounds.length - 1];
+  if (last.items.some(i => i.type === 'match' && !i.winner)) return false;
+  if (last.items.length === 1) return false;
+  const entries = last.items.map(i => i.type === 'bye'
+    ? { name:i.p, src:i.id } : { name:i.winner, src:i.id });
+  state.rounds.push(buildRound(entries));
+  return true;
+}
+function finalMatch(){
+  const last = state.rounds[state.rounds.length - 1];
+  return last && last.items.length === 1 && last.items[0].type === 'match' ? last.items[0] : null;
+}
+function champion(){ const f = finalMatch(); return f && f.winner ? f.winner : null; }
+function runnerUp(){ const f = finalMatch(); return f && f.winner ? (f.winner === f.a ? f.b : f.a) : null; }
+function futureRounds(){
+  const last = state.rounds[state.rounds.length - 1];
+  const out = [];
+  let c = last.items.length;
+  while (c > 1) {
+    out.push({ count:c, matches:Math.floor(c / 2), bye:c % 2 });
+    c = Math.floor(c / 2) + (c % 2);
+  }
+  return out;
+}
+function findMatch(id){
+  for (let ri = 0; ri < state.rounds.length; ri++) {
+    const m = state.rounds[ri].items.find(i => i.id === id);
+    if (m) return { m, ri };
+  }
+  return null;
+}
+function numbering(){
+  const map = {}; let n = 0;
+  state.rounds.forEach(r => r.items.forEach(i => { if (i.type === 'match') map[i.id] = ++n; }));
+  return { map, last:n };
+}
+function computeStats(){
+  const st = {};
+  state.players.forEach(p => st[p] = { name:p, played:0, wins:0, losses:0, pf:0, pa:0, outRound:null });
+  state.rounds.forEach((r, ri) => r.items.forEach(it => {
+    if (it.type !== 'match' || !it.winner) return;
+    const loser = it.winner === it.a ? it.b : it.a;
+    st[it.a].played++; st[it.b].played++;
+    st[it.winner].wins++; st[loser].losses++; st[loser].outRound = ri;
+    if (state.mode === 'score') {
+      st[it.a].pf += it.sa; st[it.a].pa += it.sb;
+      st[it.b].pf += it.sb; st[it.b].pa += it.sa;
+    }
+  }));
+  return st;
+}
+function standings(){
+  const ch = champion();
+  const list = Object.values(computeStats());
+  list.forEach(p => {
+    p.reach = p.name === ch ? 1e9 : (p.outRound === null ? 1e8 : p.outRound);
+    p.diff = p.pf - p.pa;
+  });
+  list.sort((a, b) => b.reach - a.reach || b.diff - a.diff || b.pf - a.pf || a.name.localeCompare(b.name, 'fa'));
+  list.forEach(p => {
+    p.rank = 1 + list.filter(q => q.reach > p.reach).length;
+    p.tie = list.filter(q => q.reach === p.reach).length > 1;
+    if (p.name === ch) p.status = 'قهرمان';
+    else if (p.outRound === null) p.status = 'در رقابت';
+    else if (ch && p.outRound === state.rounds.length - 1) p.status = 'نایب‌قهرمان';
+    else p.status = 'حذف در ' + roundTitle(state.rounds[p.outRound].count, p.outRound);
+  });
+  return list;
+}
+
+/* ---------- rendering: setup ---------- */
+function renderSetup(){
+  const n = state.players.length;
+  const items = state.players.map((p, i) =>
+    `<li><span class="n">${fa(i + 1)}</span><span class="t">${esc(p)}</span>
+     <button data-act="remove" data-i="${i}" aria-label="حذف ${esc(p)}">×</button></li>`).join('');
+  const hint = n >= 3 && n % 2 === 1
+    ? 'تعداد شرکت‌کنندگان فرد است؛ در هر مرحله که تعداد فرد باشد، یک نفر به قید قرعه مستقیم به مرحله بعد می‌رود.'
+    : 'حداقل دو شرکت‌کننده لازم است. می‌توانی چند نام را با کاما یا خط جدید یکجا وارد کنی.';
+  const chk = (k, v) => state[k] === v ? 'checked' : '';
+  app.innerHTML = `
+  <div class="setup">
+    <section class="panel">
+      <h2>مشخصات مسابقات</h2>
+      <label class="field"><span>نام مسابقات</span>
+        <input id="titleInput" value="${esc(state.title)}" maxlength="60" autocomplete="off" placeholder="مثلا: جام داخلی ۱۴۰۵"></label>
+      <div class="cols">
+        <fieldset class="seg"><legend>نحوه ثبت نتیجه</legend>
+          <div class="opts">
+            <label><input type="radio" name="mode" value="score" ${chk('mode','score')}><span>با امتیاز</span></label>
+            <label><input type="radio" name="mode" value="winner" ${chk('mode','winner')}><span>فقط برنده</span></label>
+          </div>
+          <p>در حالت امتیاز، امتیاز هر دو طرف ثبت و جدول امتیازها ساخته می‌شود.</p>
+        </fieldset>
+        <fieldset class="seg"><legend>روش قرعه‌کشی</legend>
+          <div class="opts">
+            <label><input type="radio" name="drawMode" value="random" ${chk('drawMode','random')}><span>تصادفی</span></label>
+            <label><input type="radio" name="drawMode" value="order" ${chk('drawMode','order')}><span>ترتیب ورود</span></label>
+          </div>
+          <p>در حالت «ترتیب ورود»، نفر اول با دوم، سوم با چهارم و به همین ترتیب بازی می‌کنند.</p>
+        </fieldset>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>شرکت‌کنندگان${n ? ' (' + fa(n) + ' نفر)' : ''}</h2>
+      <div class="addrow">
+        <input id="nameInput" placeholder="نام شرکت‌کننده" autocomplete="off" aria-label="نام شرکت‌کننده">
+        <button class="btn" data-act="add">افزودن</button>
+      </div>
+      <ol class="plist">${items}</ol>
+      <p class="hint">${hint}</p>
+    </section>
+    <button class="btn primary big" data-act="start" ${n < 2 ? 'disabled' : ''}>قرعه‌کشی و شروع مسابقات</button>
+  </div>`;
+}
+
+/* ---------- rendering: play ---------- */
+function matchHtml(m, num, isNext){
+  const done = !!m.winner;
+  const row = (name, score, side) => {
+    const cls = done ? (m.winner === name ? 'win' : 'lose') : '';
+    let right = '';
+    if (state.mode === 'score') {
+      right = done ? `<span class="pts">${fa(score)}</span>`
+        : `<input class="score" inputmode="numeric" data-side="${side}" value="${score === '' ? '' : esc(score)}" aria-label="امتیاز ${esc(name)}">`;
+    } else {
+      right = done ? (m.winner === name ? '<span class="tick" aria-label="برنده">✓</span>' : '')
+        : `<button class="btn tiny" data-act="win" data-id="${m.id}" data-side="${side}">برنده</button>`;
+    }
+    return `<div class="prow ${cls}"><span class="seed">${fa(state.seeds[name] || '')}</span>
+      <span class="name" title="${esc(name)}">${esc(name)}</span>${right}</div>`;
+  };
+  let actions = '';
+  if (done) actions = `<div class="actions"><button class="btn tiny" data-act="edit" data-id="${m.id}">ویرایش نتیجه</button></div>`;
+  else if (state.mode === 'score') actions = `<div class="actions"><button class="btn tiny" data-act="save" data-id="${m.id}">ثبت نتیجه</button></div>`;
+  return `<div class="match ${isNext ? 'next' : ''}" data-id="${m.id}">
+    <div class="mhead"><span>بازی ${fa(num)}</span><span>${done ? 'پایان‌یافته' : 'در انتظار'}</span></div>
+    ${row(m.a, m.sa, 'a')}${row(m.b, m.sb, 'b')}${actions}</div>`;
+}
+function byeHtml(it){
+  return `<div class="bye" data-id="${it.id}">
+    <div class="mhead"><span>ورود مستقیم</span></div>
+    <div class="prow"><span class="seed">${fa(state.seeds[it.p] || '')}</span><span class="name" title="${esc(it.p)}">${esc(it.p)}</span></div>
+    <p class="note">به قید قرعه به مرحله بعد راه یافت</p></div>`;
+}
+function championHtml(){
+  const ch = champion(); if (!ch) return '';
+  return `<section class="champ"><p>قهرمان ${esc(titleOf())}</p><h2>${esc(ch)}</h2>
+    <p>نایب‌قهرمان: ${esc(runnerUp())}</p></section>`;
+}
+function bracketTab(){
+  const { last: lastNum } = numbering();
+  const { map } = numbering();
+  const cur = state.rounds.length - 1;
+  const nextPending = state.rounds[cur].items.find(i => i.type === 'match' && !i.winner);
+  const cols = state.rounds.map((r, ri) => {
+    const ms = r.items.filter(i => i.type === 'match');
+    const done = ms.filter(m => m.winner).length;
+    const body = r.items.map(it => it.type === 'bye' ? byeHtml(it)
+      : matchHtml(it, map[it.id], ri === cur && nextPending && nextPending.id === it.id)).join('');
+    return `<div class="col" data-ri="${ri}"><div class="col-head"><h3>${roundTitle(r.count, ri)}</h3>
+      <small>${fa(done)} از ${fa(ms.length)} بازی ثبت شد</small></div><div class="col-body">${body}</div></div>`;
+  }).join('');
+  let n = lastNum;
+  const fut = futureRounds().map((f, k) => {
+    let body = '';
+    for (let i = 0; i < f.matches; i++) body += `<div class="ghost"><p>بازی ${fa(++n)}<br>در انتظار نتیجه مرحله قبل</p></div>`;
+    if (f.bye) body += `<div class="ghost"><p>یک نفر با قرعه مستقیم وارد می‌شود</p></div>`;
+    return `<div class="col future"><div class="col-head"><h3>${roundTitle(f.count, state.rounds.length + k)}</h3>
+      <small>${fa(f.matches)} بازی</small></div><div class="col-body">${body}</div></div>`;
+  }).join('');
+  return `${championHtml()}
+  <div class="bwrap ${full ? 'full' : ''}">
+    <div class="toolbar">
+      <button class="btn tiny" data-act="zoomout" aria-label="کوچک‌نمایی">−</button>
+      <span class="zoomlbl" id="zoomLbl">۱۰۰٪</span>
+      <button class="btn tiny" data-act="zoomin" aria-label="بزرگ‌نمایی">+</button>
+      <button class="btn tiny" data-act="fit">نمای کامل</button>
+      <button class="btn tiny" data-act="next">بازی بعدی</button>
+      <button class="btn tiny" data-act="full">${full ? 'خروج از تمام‌صفحه' : 'تمام‌صفحه'}</button>
+      <button class="btn tiny" data-act="print">چاپ</button>
+      <p class="hint">برای جابه‌جایی نمودار را بکش؛ با دو انگشت یا Ctrl و چرخ ماوس زوم کن.</p>
+    </div>
+    <div class="viewport" id="vp"><div class="stage" id="stage"><svg class="lines" aria-hidden="true"></svg>${cols}${fut}</div></div>
+  </div>`;
+}
+function matchesTab(){
+  const { map } = numbering();
+  return state.rounds.map((r, ri) => {
+    const ms = r.items.filter(i => i.type === 'match');
+    const rows = r.items.map(it => {
+      if (it.type === 'bye') {
+        return `<tr><td class="muted">—</td><td colspan="3">${esc(it.p)}</td><td class="muted" colspan="2">ورود مستقیم به مرحله بعد (قرعه)</td></tr>`;
+      }
+      const done = !!it.winner;
+      const result = !done ? '<span class="muted">ثبت نشده</span>'
+        : state.mode === 'score' ? `<span class="num">${fa(it.sa)} − ${fa(it.sb)}</span>` : '<span class="muted">—</span>';
+      const act = done
+        ? `<button class="btn tiny" data-act="edit" data-id="${it.id}">ویرایش</button>`
+        : `<button class="btn tiny" data-act="goto" data-id="${it.id}">ثبت در نمودار</button>`;
+      return `<tr><td class="num">${fa(map[it.id])}</td><td>${esc(it.a)}</td><td>${result}</td><td>${esc(it.b)}</td>
+        <td class="${done ? 'win' : 'muted'}">${done ? esc(it.winner) : '—'}</td><td>${act}</td></tr>`;
+    }).join('');
+    return `<section class="section"><h3>${roundTitle(r.count, ri)}<small>${fa(ms.length)} بازی</small></h3>
+      <div class="tblwrap"><table class="tbl"><thead><tr><th>بازی</th><th>بازیکن اول</th><th>نتیجه</th><th>بازیکن دوم</th><th>برنده</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table></div></section>`;
+  }).join('');
+}
+function standingsTab(){
+  const list = standings();
+  const finished = !!champion();
+  const score = state.mode === 'score';
+  const rows = list.map(p => `<tr class="${finished && p.rank === 1 ? 'top' : ''}">
+    <td class="num">${finished ? fa(p.rank) + (p.tie ? ' <small class="muted">(مشترک)</small>' : '') : '—'}</td>
+    <td>${esc(p.name)}</td><td class="num">${fa(p.played)}</td><td class="num">${fa(p.wins)}</td><td class="num">${fa(p.losses)}</td>
+    ${score ? `<td class="num">${fa(p.pf)}</td><td class="num">${fa(p.pa)}</td><td class="num" dir="ltr" style="text-align:right">${p.diff > 0 ? '+' : ''}${fa(p.diff)}</td>` : ''}
+    <td>${esc(p.status)}</td></tr>`).join('');
+  return `${championHtml()}
+  <div class="tools"><button class="btn" data-act="copy">کپی نتایج</button><button class="btn" data-act="print">چاپ</button></div>
+  <div class="tblwrap"><table class="tbl"><thead><tr><th>رتبه</th><th>شرکت‌کننده</th><th>بازی</th><th>برد</th><th>باخت</th>
+    ${score ? '<th>امتیاز گرفته</th><th>امتیاز داده</th><th>تفاضل</th>' : ''}<th>وضعیت</th></tr></thead><tbody>${rows}</tbody></table></div>
+  ${finished ? '' : '<p class="hint">رتبه‌بندی نهایی پس از پایان فینال مشخص می‌شود.</p>'}`;
+}
+function renderPlay(){
+  const total = state.players.length - 1;
+  const doneCount = state.rounds.reduce((s, r) => s + r.items.filter(i => i.type === 'match' && i.winner).length, 0);
+  const cur = state.rounds[state.rounds.length - 1];
+  const finished = !!champion();
+  const pct = total ? Math.round(doneCount / total * 100) : 0;
+  const progressText = finished ? 'مسابقات به پایان رسید.'
+    : `${fa(doneCount)} از ${fa(total)} بازی انجام شد؛ مرحله جاری: ${roundTitle(cur.count, state.rounds.length - 1)}`;
+  const tabs = [['bracket', 'نمودار مسابقات'], ['matches', 'فهرست بازی‌ها'], ['standings', 'رتبه‌بندی و آمار']]
+    .map(([k, l]) => `<button role="tab" data-act="tab" data-tab="${k}" aria-selected="${tab === k}">${l}</button>`).join('');
+  const content = tab === 'bracket' ? bracketTab() : tab === 'matches' ? matchesTab() : standingsTab();
+  app.innerHTML = `
+  <section class="pagehead">
+    <div><h1>${esc(titleOf())}</h1>
+      <p class="sub"><span>تاریخ شروع: ${dateStr(state.createdAt)}</span><span>${fa(state.players.length)} شرکت‌کننده</span><span>${modeLabel()}</span></p></div>
+    <div class="btns">
+      <button class="btn" data-act="redraw">قرعه‌کشی مجدد</button>
+      <button class="btn" data-act="reset">ویرایش شرکت‌کنندگان</button>
+      <button class="btn" data-act="newtournament">مسابقات جدید</button>
+    </div>
+  </section>
+  <div class="progress"><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
+    <p>${progressText}</p></div>
+  <nav class="tabs" role="tablist">${tabs}</nav>
+  <div id="tabpanel">${content}</div>`;
+  if (tab === 'bracket') {
+    bindViewport();
+    requestAnimationFrame(layoutBracket);
+  }
+}
+function render(){
+  const y = window.scrollY;
+  if (state.phase === 'play' && state.rounds.length) renderPlay(); else renderSetup();
+  window.scrollTo(0, y);
+}
+
+/* ---------- zoom / pan ---------- */
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+function applyView(){
+  const st = $('#stage'); if (!st) return;
+  st.style.transform = `translate(${view.x}px,${view.y}px) scale(${view.s})`;
+  const l = $('#zoomLbl'); if (l) l.textContent = fa(Math.round(view.s * 100)) + '٪';
+}
+function animateView(fn){
+  const st = $('#stage'); if (!st) return;
+  st.classList.add('anim'); fn();
+  setTimeout(() => st.classList.remove('anim'), 400);
+}
+function zoomAt(cx, cy, ns){
+  ns = clamp(ns, 0.2, 2.2);
+  const k = ns / view.s;
+  view.x = cx - (cx - view.x) * k;
+  view.y = cy - (cy - view.y) * k;
+  view.s = ns;
+  applyView();
+}
+function zoomBy(k, anim){
+  const vp = $('#vp'); if (!vp) return;
+  const f = () => zoomAt(vp.clientWidth / 2, vp.clientHeight / 2, view.s * k);
+  anim ? animateView(f) : f();
+}
+function fitView(anim){
+  const vp = $('#vp'), st = $('#stage'); if (!vp || !st) return;
+  const f = () => {
+    const s = clamp(Math.min(vp.clientWidth / st.offsetWidth, vp.clientHeight / st.offsetHeight, 1), 0.2, 1);
+    view.s = s;
+    view.x = (vp.clientWidth - st.offsetWidth * s) / 2;
+    view.y = (vp.clientHeight - st.offsetHeight * s) / 2;
+    applyView();
+  };
+  anim ? animateView(f) : f();
+}
+function focusMatch(id){
+  const vp = $('#vp'), el = $(`#stage [data-id="${id}"]`); if (!vp || !el) return;
+  animateView(() => {
+    const s = clamp(Math.max(view.s, 0.85), 0.2, 2.2);
+    view.s = s;
+    view.x = vp.clientWidth / 2 - (el.offsetLeft + el.offsetWidth / 2) * s;
+    view.y = vp.clientHeight / 2 - (el.offsetTop + el.offsetHeight / 2) * s;
+    applyView();
+  });
+}
+function focusNext(){
+  const cur = state.rounds[state.rounds.length - 1];
+  const m = cur.items.find(i => i.type === 'match' && !i.winner);
+  if (m) focusMatch(m.id); else fitView(true);
+}
+function layoutBracket(){
+  const st = $('#stage'); if (!st) return;
+  if (!viewReady) { fitView(); viewReady = true; } else applyView();
+  st.classList.add('ready');
+  drawLines();
+}
+function drawLines(){
+  const st = $('#stage'); if (!st) return;
+  const svg = st.querySelector('svg.lines');
+  const el = id => st.querySelector(`[data-id="${id}"]`);
+  let d = '';
+  state.rounds.forEach((r, ri) => {
+    if (ri === 0) return;
+    r.items.forEach(it => {
+      const t = el(it.id); if (!t) return;
+      const x2 = t.offsetLeft + t.offsetWidth, y2 = t.offsetTop + t.offsetHeight / 2;
+      const srcs = it.type === 'match' ? [it.srcA, it.srcB] : [it.src];
+      srcs.forEach(s => {
+        const so = el(s); if (!so) return;
+        const x1 = so.offsetLeft, y1 = so.offsetTop + so.offsetHeight / 2;
+        const mx = (x1 + x2) / 2;
+        d += `M${x1} ${y1}H${mx}V${y2}H${x2}`;
+      });
+    });
+  });
+  svg.innerHTML = `<path d="${d}"/>`;
+}
+function bindViewport(){
+  const vp = $('#vp'); if (!vp) return;
+  const ptrs = new Map();
+  let lastDist = 0;
+  vp.addEventListener('pointerdown', e => {
+    if (e.target.closest('input,button,select,textarea,a')) return;
+    vp.setPointerCapture(e.pointerId);
+    ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY });
+    vp.classList.add('grabbing');
+    if (ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()];
+      lastDist = Math.hypot(a.x - b.x, a.y - b.y);
+    }
+  });
+  vp.addEventListener('pointermove', e => {
+    const p = ptrs.get(e.pointerId); if (!p) return;
+    if (ptrs.size === 1) {
+      view.x += e.clientX - p.x; view.y += e.clientY - p.y;
+      p.x = e.clientX; p.y = e.clientY;
+      applyView();
+    } else if (ptrs.size === 2) {
+      const [a0, b0] = [...ptrs.values()];
+      const pm = { x:(a0.x + b0.x) / 2, y:(a0.y + b0.y) / 2 };
+      p.x = e.clientX; p.y = e.clientY;
+      const [a, b] = [...ptrs.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      const mid = { x:(a.x + b.x) / 2, y:(a.y + b.y) / 2 };
+      view.x += mid.x - pm.x; view.y += mid.y - pm.y;
+      const r = vp.getBoundingClientRect();
+      if (lastDist > 0) zoomAt(mid.x - r.left, mid.y - r.top, view.s * dist / lastDist); else applyView();
+      lastDist = dist;
+    }
+  });
+  const end = e => {
+    ptrs.delete(e.pointerId);
+    if (ptrs.size < 2) lastDist = 0;
+    if (ptrs.size === 0) vp.classList.remove('grabbing');
+  };
+  vp.addEventListener('pointerup', end);
+  vp.addEventListener('pointercancel', end);
+  vp.addEventListener('wheel', e => {
+    e.preventDefault();
+    const r = vp.getBoundingClientRect();
+    if (e.ctrlKey || e.metaKey) zoomAt(e.clientX - r.left, e.clientY - r.top, view.s * Math.exp(-e.deltaY * 0.002));
+    else { view.x -= e.deltaX; view.y -= e.deltaY; applyView(); }
+  }, { passive:false });
+  vp.addEventListener('dblclick', e => {
+    if (!e.target.closest('.match,.bye,.ghost,input,button')) fitView(true);
+  });
+}
+
+/* ---------- actions ---------- */
+function addPlayers(){
+  const inp = $('#nameInput');
+  const names = inp.value.split(/[\n,،]+/).map(s => s.trim()).filter(Boolean);
+  if (!names.length) return;
+  const dups = [];
+  let over = false;
+  names.forEach(n => {
+    if (state.players.some(p => p.toLowerCase() === n.toLowerCase())) dups.push(n);
+    else if (state.players.length >= MAX_PLAYERS) over = true;
+    else state.players.push(n);
+  });
+  persist(); render();
+  if (over) toast('حداکثر ' + fa(MAX_PLAYERS) + ' شرکت‌کننده مجاز است');
+  else if (dups.length) toast('نام تکراری: ' + dups.join('، '));
+  $('#nameInput').focus();
+}
+function finishMatch(m, created){
+  persist(); render();
+  if (created && tab === 'bracket') requestAnimationFrame(() => requestAnimationFrame(focusNext));
+}
+function saveMatch(id){
+  const card = app.querySelector(`.match[data-id="${id}"]`);
+  const a = parseInt(toEn(card.querySelector('[data-side="a"]').value), 10);
+  const b = parseInt(toEn(card.querySelector('[data-side="b"]').value), 10);
+  if (isNaN(a) || isNaN(b) || a < 0 || b < 0) return toast('امتیاز هر دو طرف را وارد کنید');
+  if (a === b) return toast('امتیازها نمی‌توانند مساوی باشند');
+  const { m } = findMatch(id);
+  m.sa = a; m.sb = b; m.winner = a > b ? m.a : m.b;
+  finishMatch(m, advanceIfDone());
+}
+function setWinner(id, side){
+  const { m } = findMatch(id);
+  m.sa = ''; m.sb = ''; m.winner = side === 'a' ? m.a : m.b;
+  finishMatch(m, advanceIfDone());
+}
+async function editMatch(id){
+  const { m, ri } = findMatch(id);
+  if (state.rounds.length - 1 > ri) {
+    const ok = await ask('با ویرایش این نتیجه، مراحل بعدی پاک و دوباره ساخته می‌شوند. ادامه می‌دهید؟');
+    if (!ok) return;
+    state.rounds.length = ri + 1;
+  }
+  m.winner = null;
+  persist(); render();
+}
+function resultsText(){
+  const lines = [titleOf(), ''];
+  standings().forEach(p => {
+    lines.push((champion() ? fa(p.rank) + '. ' : '- ') + p.name + ' (' + p.status + ')');
+  });
+  return lines.join('\n');
+}
+async function copyResults(){
+  try { await navigator.clipboard.writeText(resultsText()); toast('نتایج کپی شد'); }
+  catch(e){ toast('کپی انجام نشد'); }
+}
+function setFull(v){
+  full = v;
+  document.body.classList.toggle('noscroll', full);
+  render();
+}
+
+app.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'add') addPlayers();
+  else if (act === 'remove') { state.players.splice(+b.dataset.i, 1); persist(); render(); }
+  else if (act === 'start') startTournament();
+  else if (act === 'save') saveMatch(b.dataset.id);
+  else if (act === 'win') setWinner(b.dataset.id, b.dataset.side);
+  else if (act === 'edit') editMatch(b.dataset.id);
+  else if (act === 'tab') { tab = b.dataset.tab; render(); }
+  else if (act === 'zoomin') zoomBy(1.25, true);
+  else if (act === 'zoomout') zoomBy(1 / 1.25, true);
+  else if (act === 'fit') fitView(true);
+  else if (act === 'next') focusNext();
+  else if (act === 'full') setFull(!full);
+  else if (act === 'print') window.print();
+  else if (act === 'copy') copyResults();
+  else if (act === 'goto') {
+    tab = 'bracket'; render();
+    const id = b.dataset.id;
+    requestAnimationFrame(() => requestAnimationFrame(() => focusMatch(id)));
+  }
+  else if (act === 'redraw') {
+    if (await ask('نتیجه‌ها پاک می‌شوند و قرعه‌کشی از نو انجام می‌شود. ادامه می‌دهید؟')) startTournament();
+  }
+  else if (act === 'reset') {
+    if (await ask('نتایج فعلی پاک می‌شوند و به صفحه تنظیمات برمی‌گردید. ادامه می‌دهید؟')) {
+      state.phase = 'setup'; state.rounds = []; state.seeds = {}; full = false;
+      document.body.classList.remove('noscroll');
+      persist(); render();
+    }
+  }
+  else if (act === 'newtournament') {
+    if (await ask('کل مسابقات و فهرست شرکت‌کنندگان پاک می‌شود. ادامه می‌دهید؟')) {
+      state = defaults(); full = false;
+      document.body.classList.remove('noscroll');
+      persist(); render();
+    }
+  }
+});
+app.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (e.target.id === 'nameInput') { e.preventDefault(); addPlayers(); }
+  else if (e.target.classList.contains('score')) {
+    const card = e.target.closest('.match');
+    if (card) saveMatch(card.dataset.id);
+  }
+});
+app.addEventListener('input', e => {
+  if (e.target.id === 'titleInput') { state.title = e.target.value; persist(); }
+});
+app.addEventListener('change', e => {
+  if (e.target.name === 'mode') { state.mode = e.target.value; persist(); }
+  else if (e.target.name === 'drawMode') { state.drawMode = e.target.value; persist(); }
+});
+document.addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('input,textarea,dialog')) return;
+  if (state.phase !== 'play' || tab !== 'bracket') return;
+  if (e.key === '+' || e.key === '=') zoomBy(1.25, true);
+  else if (e.key === '-') zoomBy(1 / 1.25, true);
+  else if (e.key === '0') fitView(true);
+  else if (e.key === 'Escape' && full) setFull(false);
+});
+window.addEventListener('resize', () => { if (viewReady) applyView(); });
+
+render();
+</script>
+</body>
+</html>
